@@ -85,29 +85,84 @@ def normalize_shift(raw_text: str | None, fallback: str) -> str:
     return fallback
 
 
+def extract_report_date(raw_text: str | None, fallback: str) -> str:
+    text = raw_text or ''
+    m = re.search(r'(\d{2})\.(\d{2})\.(\d{2,4})', text)
+    if not m:
+        return fallback
+    dd, mm, yy = m.groups()
+    year = int(yy)
+    if year < 100:
+        year += 2000
+    return f"{year:04d}-{int(mm):02d}-{int(dd):02d}"
+
+
+def extract_section_number(raw_text: str | None) -> str | None:
+    text = raw_text or ''
+    m = re.search(r'участок\s*№?\s*(\d+)', text, flags=re.I)
+    return m.group(1) if m else None
+
+
+def match_section_id(db: Session, section_number: str | None, fallback_section_id: str):
+    if not section_number:
+        return fallback_section_id
+    rows = db.execute(select(construction_sections.c.id, construction_sections.c.name, construction_sections.c.code)).all()
+    for sid, name, code in rows:
+        blob = f"{name or ''} {code or ''}".lower()
+        if section_number in blob:
+            return sid
+    return fallback_section_id
+
+
+def classify_line(line: str) -> str:
+    low = line.lower()
+    if any(word in low for word in ['самосвал', 'экскават', 'бульдоз', 'каток', 'грейдер', 'погрузчик', 'манипулятор', 'трал']):
+        return 'equipment'
+    if any(word in low for word in ['перевоз', 'рейс', 'доставка', 'вывоз', 'отгруз', 'погрузка']) and any(word in low for word in ['грунт', 'пес', 'щеб', 'материал', 'торф']):
+        return 'movement'
+    if any(word in low for word in ['персонал', 'водитель', 'машинист', 'итр', 'учетчик']):
+        return 'personnel'
+    return 'work'
+
+
 def heuristic_extract_entities(raw_text: str | None) -> dict:
     text = raw_text or ''
-    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    lines = [ln.strip(' -	') for ln in text.splitlines() if ln.strip()]
     work_lines = []
     movement_lines = []
     equipment_lines = []
     personnel_lines = []
+    report_date = None
     for line in lines:
-        low = line.lower()
+        if not report_date:
+            m = re.search(r'(\d{2}\.\d{2}\.\d{2,4})', line)
+            if m:
+                report_date = m.group(1)
+        classified = None
         if re.match(r'^\d+[.)]', line):
-            if any(word in low for word in ['перевоз', 'рейс', 'самосвал', 'погруз', 'доставка']):
-                movement_lines.append(line)
-            else:
-                work_lines.append(line)
-        elif any(word in low for word in ['экскават', 'бульдоз', 'самосвал', 'каток', 'грейдер', 'погрузчик', 'манипулятор']):
+            classified = classify_line(line)
+        elif any(x in line.lower() for x in ['участок', 'ст.', 'путь', 'а/д']):
+            continue
+        else:
+            classified = classify_line(line)
+        if classified == 'movement':
+            movement_lines.append(line)
+        elif classified == 'equipment':
             equipment_lines.append(line)
-        elif any(word in low for word in ['персонал', 'водитель', 'машинист', 'итр', 'учетчик']):
+        elif classified == 'personnel':
             personnel_lines.append(line)
+        elif classified == 'work' and re.match(r'^\d+[.)]', line):
+            work_lines.append(line)
     return {
-        'work_lines': work_lines[:30],
-        'movement_lines': movement_lines[:30],
-        'equipment_mentions': equipment_lines[:30],
-        'personnel_mentions': personnel_lines[:30],
+        'header': {
+            'report_date_raw': report_date,
+            'section_number': extract_section_number(text),
+            'shift_guess': 'night' if 'ноч' in text.lower() else ('day' if 'день' in text.lower() else None),
+        },
+        'work_lines': work_lines[:40],
+        'movement_lines': movement_lines[:40],
+        'equipment_mentions': equipment_lines[:40],
+        'personnel_mentions': personnel_lines[:40],
     }
 
 
@@ -117,7 +172,7 @@ def create_entities_from_raw_text(db: Session, report_id, raw_text: str | None, 
     work_name_map = [(str(name).lower(), wid) for wid, name in work_type_rows if name]
     material_rows = db.execute(select(materials.c.id, materials.c.name)).all()
     material_map = [(str(name).lower(), mid) for mid, name in material_rows if name]
-    created = {'work_items': 0, 'movements': 0}
+    created = {'work_items': 0, 'movements': 0, 'equipment': 0}
     for line in entities['work_lines']:
         norm = re.sub(r'^\d+[.)]\s*', '', line).strip()
         matched_work_type = None
@@ -157,6 +212,28 @@ def create_entities_from_raw_text(db: Session, report_id, raw_text: str | None, 
                 comment='Автосоздано из текста отчета (MVP heuristic): ' + norm[:500],
             ))
             created['movements'] += 1
+    for line in entities['equipment_mentions']:
+        norm = re.sub(r'^\d+[.)]\s*', '', line).strip()
+        equipment_type = 'unknown'
+        low = norm.lower()
+        for key in ['самосвал', 'экскаватор', 'бульдозер', 'каток', 'грейдер', 'погрузчик', 'манипулятор', 'трал']:
+            if key in low:
+                equipment_type = key
+                break
+        qty_match = re.search(r'(\d+)\s*(ед|шт|чел)?', low)
+        qty = int(qty_match.group(1)) if qty_match else 1
+        qty = max(1, min(qty, 10))
+        for idx in range(qty):
+            db.execute(insert(report_equipment_units).values(
+                id=uuid4(),
+                daily_report_id=report_id,
+                equipment_type=equipment_type,
+                brand_model=norm[:200],
+                ownership_type='unknown',
+                status='working',
+                comment='Автосоздано из текста отчета (MVP heuristic)',
+            ))
+            created['equipment'] += 1
     return entities, created
 
 
@@ -494,12 +571,15 @@ def reports_new_submit(
 ):
     report_id = uuid4()
     with SessionLocal() as db:
+        parsed_date = extract_report_date(raw_text, report_date)
+        parsed_shift = normalize_shift(raw_text, shift)
+        parsed_section_id = match_section_id(db, extract_section_number(raw_text), section_id)
         db.execute(
             insert(daily_reports).values(
                 id=report_id,
-                report_date=report_date,
-                shift=shift,
-                section_id=section_id,
+                report_date=parsed_date,
+                shift=parsed_shift,
+                section_id=parsed_section_id,
                 source_type=source_type,
                 source_reference=source_reference or None,
                 raw_text=raw_text or None,
@@ -508,11 +588,10 @@ def reports_new_submit(
             )
         )
         report_row = {
-            'report_date': report_date,
-            'shift': normalize_shift(raw_text, shift),
-            'section_id': section_id,
+            'report_date': parsed_date,
+            'shift': parsed_shift,
+            'section_id': parsed_section_id,
         }
-        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(shift=report_row['shift']))
         if raw_text.strip():
             create_parse_candidate(db, report_id, raw_text)
             create_entities_from_raw_text(db, report_id, raw_text, report_row)
