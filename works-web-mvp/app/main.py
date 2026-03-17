@@ -2,6 +2,7 @@ import os
 from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from uuid import uuid4
+import re
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
@@ -71,10 +72,92 @@ def to_decimal(value: str | None):
     return Decimal(str(value).replace(",", "."))
 
 
-def to_int(value: str | None):
-    if value in (None, ""):
-        return None
-    return int(value)
+def to_uuid_or_none(value: str | None):
+    return value or None
+
+
+def normalize_shift(raw_text: str | None, fallback: str) -> str:
+    text = (raw_text or '').lower()
+    if 'ноч' in text:
+        return 'night'
+    if 'день' in text or '/д/' in text:
+        return 'day'
+    return fallback
+
+
+def heuristic_extract_entities(raw_text: str | None) -> dict:
+    text = raw_text or ''
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    work_lines = []
+    movement_lines = []
+    equipment_lines = []
+    personnel_lines = []
+    for line in lines:
+        low = line.lower()
+        if re.match(r'^\d+[.)]', line):
+            if any(word in low for word in ['перевоз', 'рейс', 'самосвал', 'погруз', 'доставка']):
+                movement_lines.append(line)
+            else:
+                work_lines.append(line)
+        elif any(word in low for word in ['экскават', 'бульдоз', 'самосвал', 'каток', 'грейдер', 'погрузчик', 'манипулятор']):
+            equipment_lines.append(line)
+        elif any(word in low for word in ['персонал', 'водитель', 'машинист', 'итр', 'учетчик']):
+            personnel_lines.append(line)
+    return {
+        'work_lines': work_lines[:30],
+        'movement_lines': movement_lines[:30],
+        'equipment_mentions': equipment_lines[:30],
+        'personnel_mentions': personnel_lines[:30],
+    }
+
+
+def create_entities_from_raw_text(db: Session, report_id, raw_text: str | None, report_row):
+    entities = heuristic_extract_entities(raw_text)
+    work_type_rows = db.execute(select(work_types.c.id, work_types.c.name).where(work_types.c.is_active.is_(True))).all()
+    work_name_map = [(str(name).lower(), wid) for wid, name in work_type_rows if name]
+    material_rows = db.execute(select(materials.c.id, materials.c.name)).all()
+    material_map = [(str(name).lower(), mid) for mid, name in material_rows if name]
+    created = {'work_items': 0, 'movements': 0}
+    for line in entities['work_lines']:
+        norm = re.sub(r'^\d+[.)]\s*', '', line).strip()
+        matched_work_type = None
+        for name, wid in work_name_map:
+            if name and (name in norm.lower() or norm.lower() in name):
+                matched_work_type = wid
+                break
+        db.execute(insert(daily_work_items).values(
+            id=uuid4(),
+            daily_report_id=report_id,
+            report_date=report_row['report_date'],
+            shift=report_row['shift'],
+            section_id=report_row['section_id'],
+            work_type_id=matched_work_type,
+            work_name_raw=norm[:1000],
+            labor_source_type='unknown',
+            comment='Автосоздано из текста отчета (MVP heuristic)',
+        ))
+        created['work_items'] += 1
+    for line in entities['movement_lines']:
+        norm = re.sub(r'^\d+[.)]\s*', '', line).strip()
+        matched_material = None
+        for name, mid in material_map:
+            if name and name in norm.lower():
+                matched_material = mid
+                break
+        if matched_material:
+            db.execute(insert(material_movements).values(
+                id=uuid4(),
+                daily_report_id=report_id,
+                report_date=report_row['report_date'],
+                shift=report_row['shift'],
+                section_id=report_row['section_id'],
+                material_id=matched_material,
+                movement_type='other',
+                labor_source_type='unknown',
+                comment='Автосоздано из текста отчета (MVP heuristic): ' + norm[:500],
+            ))
+            created['movements'] += 1
+    return entities, created
 
 
 def all_lookup_rows(db: Session):
@@ -287,20 +370,22 @@ def enrich_movements_with_usage(db: Session, rows):
 
 
 def create_parse_candidate(db: Session, report_id, raw_text: str | None):
+    extracted = heuristic_extract_entities(raw_text)
     payload = {
         "raw_text_present": bool(raw_text and raw_text.strip()),
-        "note": "MVP heuristic candidate. Требуется ручная проверка оператором.",
+        "note": "MVP heuristic parse. Требуется ручная проверка оператором.",
         "preview": (raw_text or "")[:500],
+        **extracted,
     }
     db.execute(
         insert(daily_report_parse_candidates).values(
             id=uuid4(),
             daily_report_id=report_id,
-            candidate_type="raw_text_stub",
+            candidate_type="heuristic_parse",
             payload_json=payload,
-            confidence=Decimal("0.35"),
+            confidence=Decimal("0.55") if (extracted['work_lines'] or extracted['movement_lines'] or extracted['equipment_mentions']) else Decimal("0.15"),
             needs_manual_review=True,
-            comment="Создано MVP-авторазбором-заглушкой",
+            comment="Создано MVP-эвристическим разбором",
         )
     )
 
@@ -422,8 +507,15 @@ def reports_new_submit(
                 operator_status="pending",
             )
         )
+        report_row = {
+            'report_date': report_date,
+            'shift': normalize_shift(raw_text, shift),
+            'section_id': section_id,
+        }
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(shift=report_row['shift']))
         if raw_text.strip():
             create_parse_candidate(db, report_id, raw_text)
+            create_entities_from_raw_text(db, report_id, raw_text, report_row)
         db.commit()
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 
@@ -696,6 +788,122 @@ def add_movement_equipment_usage(
             )
         )
         db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="pending"))
+        db.commit()
+    return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
+
+
+@app.post("/reports/{report_id}/edit-header")
+def edit_report_header(
+    report_id: str,
+    report_date: str = Form(...),
+    shift: str = Form(...),
+    section_id: str = Form(...),
+    source_type: str = Form(...),
+    source_reference: str = Form(""),
+    raw_text: str = Form(""),
+):
+    with SessionLocal() as db:
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(
+            report_date=report_date,
+            shift=shift,
+            section_id=section_id,
+            source_type=source_type,
+            source_reference=source_reference or None,
+            raw_text=raw_text or None,
+            operator_status='pending',
+        ))
+        db.commit()
+    return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
+
+
+@app.post("/work-items/{item_id}/edit")
+def edit_work_item(
+    item_id: str,
+    object_id: str = Form(""),
+    constructive_id: str = Form(""),
+    work_type_id: str = Form(""),
+    work_name_raw: str = Form(""),
+    unit: str = Form(""),
+    volume: str = Form(""),
+    labor_source_type: str = Form("unknown"),
+    contractor_name: str = Form(""),
+    comment: str = Form(""),
+):
+    with SessionLocal() as db:
+        report_id = db.execute(select(daily_work_items.c.daily_report_id).where(daily_work_items.c.id == item_id)).scalar_one()
+        db.execute(daily_work_items.update().where(daily_work_items.c.id == item_id).values(
+            object_id=to_uuid_or_none(object_id),
+            constructive_id=to_uuid_or_none(constructive_id),
+            work_type_id=to_uuid_or_none(work_type_id),
+            work_name_raw=work_name_raw or None,
+            unit=unit or None,
+            volume=to_decimal(volume),
+            labor_source_type=labor_source_type,
+            contractor_name=contractor_name or None,
+            comment=comment or None,
+        ))
+        db.commit()
+    return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
+
+
+@app.post("/movements/{movement_id}/edit")
+def edit_movement(
+    movement_id: str,
+    material_id: str = Form(...),
+    from_object_id: str = Form(""),
+    to_object_id: str = Form(""),
+    volume: str = Form(""),
+    unit: str = Form(""),
+    trip_count: str = Form(""),
+    movement_type: str = Form("other"),
+    labor_source_type: str = Form("unknown"),
+    contractor_name: str = Form(""),
+    comment: str = Form(""),
+):
+    with SessionLocal() as db:
+        report_id = db.execute(select(material_movements.c.daily_report_id).where(material_movements.c.id == movement_id)).scalar_one()
+        db.execute(material_movements.update().where(material_movements.c.id == movement_id).values(
+            material_id=material_id,
+            from_object_id=to_uuid_or_none(from_object_id),
+            to_object_id=to_uuid_or_none(to_object_id),
+            volume=to_decimal(volume),
+            unit=unit or None,
+            trip_count=to_int(trip_count),
+            movement_type=movement_type,
+            labor_source_type=labor_source_type,
+            contractor_name=contractor_name or None,
+            comment=comment or None,
+        ))
+        db.commit()
+    return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
+
+
+@app.post("/equipment/{equipment_id}/edit")
+def edit_equipment(
+    equipment_id: str,
+    equipment_type: str = Form(...),
+    brand_model: str = Form(""),
+    unit_number: str = Form(""),
+    plate_number: str = Form(""),
+    operator_name: str = Form(""),
+    ownership_type: str = Form("unknown"),
+    contractor_name: str = Form(""),
+    status: str = Form("unknown"),
+    comment: str = Form(""),
+):
+    with SessionLocal() as db:
+        report_id = db.execute(select(report_equipment_units.c.daily_report_id).where(report_equipment_units.c.id == equipment_id)).scalar_one()
+        db.execute(report_equipment_units.update().where(report_equipment_units.c.id == equipment_id).values(
+            equipment_type=equipment_type,
+            brand_model=brand_model or None,
+            unit_number=unit_number or None,
+            plate_number=plate_number or None,
+            operator_name=operator_name or None,
+            ownership_type=ownership_type,
+            contractor_name=contractor_name or None,
+            status=status,
+            comment=comment or None,
+        ))
         db.commit()
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 

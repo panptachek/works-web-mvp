@@ -29,3 +29,5 @@
 - Implemented create flows for report draft, work item, work segment, material movement, equipment unit, and review approval.
 - Verified key routes with FastAPI TestClient: all returned `200 OK`.
 - DB schema was not modified during this MVP task.
+- New improvement cycle approved by Chel after hands-on testing: current MVP works but feels strange; parser must actually extract data from pasted report text, direct editing of rows must become easier, and UI/design should be improved even if still simple.
+- Current next step: upgrade parser from stub to heuristic extraction, add direct editing flows for report entities, and improve layout/UX of report review screens.

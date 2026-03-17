@@ -14,17 +14,18 @@
 <div class="row g-4">
   <div class="col-lg-5">
     <div class="card mb-4">
-      <div class="card-header fw-semibold">Шапка отчета</div>
-      <div class="card-body small">
-        <div><b>Источник:</b> {{ report.source_type }}</div>
-        <div><b>Ссылка/ID:</b> {{ report.source_reference or '—' }}</div>
-        <div><b>Parse status:</b> {{ report.parse_status or '—' }}</div>
-        <div><b>Operator status:</b> {{ report.operator_status or 'draft' }}</div>
+      <div class="card-header fw-semibold">Шапка отчета — можно править прямо здесь</div>
+      <div class="card-body">
+        <form method="post" action="/reports/{{ report.id }}/edit-header" class="row g-2 small">
+          <div class="col-md-6"><label class="form-label">Дата</label><input type="date" name="report_date" value="{{ report.report_date }}" class="form-control" required></div>
+          <div class="col-md-6"><label class="form-label">Смена</label><select name="shift" class="form-select"><option value="day" {% if report.shift == 'day' %}selected{% endif %}>day</option><option value="night" {% if report.shift == 'night' %}selected{% endif %}>night</option><option value="unknown" {% if report.shift == 'unknown' %}selected{% endif %}>unknown</option></select></div>
+          <div class="col-md-12"><label class="form-label">Участок</label><select name="section_id" class="form-select">{% for row in sections %}<option value="{{ row.id }}" {% if row.id == report.section_id %}selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></div>
+          <div class="col-md-6"><label class="form-label">Источник</label><select name="source_type" class="form-select"><option value="manual" {% if report.source_type == 'manual' %}selected{% endif %}>manual</option><option value="max_message" {% if report.source_type == 'max_message' %}selected{% endif %}>max_message</option></select></div>
+          <div class="col-md-6"><label class="form-label">ID/ссылка</label><input name="source_reference" value="{{ report.source_reference or '' }}" class="form-control"></div>
+          <div class="col-12"><label class="form-label">Исходный текст</label><textarea name="raw_text" rows="12" class="form-control">{{ report.raw_text or '' }}</textarea></div>
+          <div class="col-12 d-flex justify-content-end"><button class="btn btn-outline-primary">Сохранить шапку и текст</button></div>
+        </form>
       </div>
-    </div>
-    <div class="card mb-4">
-      <div class="card-header fw-semibold">Исходный текст</div>
-      <div class="card-body"><pre class="raw-text">{{ report.raw_text or 'Исходный текст отсутствует' }}</pre></div>
     </div>
     <div class="card">
       <div class="card-header fw-semibold">Авторазбор / parse candidates</div>
@@ -60,16 +61,23 @@
       </div>
     </div>
     <div class="card mb-4">
-      <div class="card-header fw-semibold">Подтвержденные / введенные работы</div>
+      <div class="card-header fw-semibold">Работы — автосозданные можно сразу править</div>
       <div class="card-body">
         {% for item in work_items %}
           <div class="border rounded p-3 mb-3">
-            <div class="d-flex justify-content-between align-items-start mb-2">
-              <div>
-                <div class="fw-semibold">{{ item.work_type_name or item.work_name_raw or 'Работа без названия' }}</div>
-                <div class="small-muted">Объект: {{ item.object_name or '—' }} · Конструктив: {{ item.constructive_name or '—' }} · Объем: {{ item.volume or '—' }} {{ item.unit or '' }}</div>
-              </div>
-            </div>
+            <div class="fw-semibold mb-2">{{ item.work_type_name or item.work_name_raw or 'Работа без названия' }}</div>
+            <form method="post" action="/work-items/{{ item.id }}/edit" class="row g-2 mb-3 small">
+              <div class="col-md-4"><select name="object_id" class="form-select"><option value="">Объект</option>{% for row in objects %}<option value="{{ row.id }}" {% if row.id == item.object_id %}selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><select name="constructive_id" class="form-select"><option value="">Конструктив</option>{% for row in constructives %}<option value="{{ row.id }}" {% if row.id == item.constructive_id %}selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><select name="work_type_id" class="form-select"><option value="">Вид работы</option>{% for row in work_types %}<option value="{{ row.id }}" {% if row.id == item.work_type_id %}selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><input name="work_name_raw" value="{{ item.work_name_raw or '' }}" class="form-control" placeholder="Название"></div>
+              <div class="col-md-2"><input name="unit" value="{{ item.unit or '' }}" class="form-control" placeholder="ед."></div>
+              <div class="col-md-2"><input name="volume" value="{{ item.volume or '' }}" class="form-control" placeholder="объем"></div>
+              <div class="col-md-2"><select name="labor_source_type" class="form-select"><option value="own" {% if item.labor_source_type=='own' %}selected{% endif %}>own</option><option value="hired" {% if item.labor_source_type=='hired' %}selected{% endif %}>hired</option><option value="mixed" {% if item.labor_source_type=='mixed' %}selected{% endif %}>mixed</option><option value="unknown" {% if item.labor_source_type=='unknown' or not item.labor_source_type %}selected{% endif %}>unknown</option></select></div>
+              <div class="col-md-6"><input name="contractor_name" value="{{ item.contractor_name or '' }}" class="form-control" placeholder="Подрядчик"></div>
+              <div class="col-md-6"><input name="comment" value="{{ item.comment or '' }}" class="form-control" placeholder="Комментарий"></div>
+              <div class="col-12 d-flex justify-content-end"><button class="btn btn-sm btn-outline-primary">Сохранить работу</button></div>
+            </form>
             <div class="table-responsive mb-3">
               <table class="table table-sm">
                 <thead><tr><th>PK от</th><th>PK до</th><th>Объем сегмента</th><th>Исходный текст</th></tr></thead>
@@ -89,28 +97,6 @@
               <div class="col-md-3"><input name="pk_raw_text" class="form-control" placeholder="ПК3289+50 - ПК3305+00"></div>
               <div class="col-md-1"><button class="btn btn-outline-primary w-100">+</button></div>
             </form>
-            <div class="card bg-light-subtle border-0">
-              <div class="card-body">
-                <div class="fw-semibold mb-2">Техника по этой работе</div>
-                <div class="small mb-3">
-                  {% for eu in item.equipment_usage %}
-                    <div class="border-bottom py-2">
-                      {{ eu.equipment_type }} · {{ eu.brand_model or '—' }} · {{ eu.unit_number or eu.plate_number or '—' }} · {{ eu.ownership_type or 'unknown' }}
-                      <div class="small-muted">рейсы: {{ eu.trips_count or '—' }} · объем: {{ eu.worked_volume or '—' }} · площадь: {{ eu.worked_area or '—' }} · длина: {{ eu.worked_length or '—' }}</div>
-                    </div>
-                  {% else %}<div class="text-muted">Привязок техники пока нет</div>{% endfor %}
-                </div>
-                <form method="post" action="/work-items/{{ item.id }}/equipment-usage" class="row g-2">
-                  <div class="col-md-4"><select name="report_equipment_unit_id" class="form-select" required><option value="">Выбери технику</option>{% for e in equipment %}<option value="{{ e.id }}">{{ e.equipment_type }} · {{ e.brand_model or '—' }} · {{ e.unit_number or e.plate_number or '—' }} · {{ e.ownership_type or 'unknown' }}</option>{% endfor %}</select></div>
-                  <div class="col-md-2"><input name="trips_count" class="form-control" placeholder="рейсы"></div>
-                  <div class="col-md-2"><input name="worked_volume" class="form-control" placeholder="объем"></div>
-                  <div class="col-md-2"><input name="worked_area" class="form-control" placeholder="площадь"></div>
-                  <div class="col-md-2"><input name="worked_length" class="form-control" placeholder="длина"></div>
-                  <div class="col-12"><input name="comment" class="form-control" placeholder="Комментарий"></div>
-                  <div class="col-12 text-end"><button class="btn btn-outline-dark">Привязать технику к работе</button></div>
-                </form>
-              </div>
-            </div>
           </div>
         {% else %}
           <div class="text-muted">Работ пока нет</div>
@@ -119,63 +105,23 @@
     </div>
     <div class="row g-4">
       <div class="col-xl-6">
-        <div class="card h-100">
-          <div class="card-header fw-semibold">Добавить перевозку</div>
-          <div class="card-body">
-            <form method="post" action="/reports/{{ report.id }}/movements" class="row g-2">
-              <div class="col-12"><label class="form-label">Материал</label><select name="material_id" class="form-select" required>{% for row in materials %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
-              <div class="col-md-6"><label class="form-label">Откуда</label><select name="from_object_id" class="form-select"><option value="">—</option>{% for row in objects %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
-              <div class="col-md-6"><label class="form-label">Куда</label><select name="to_object_id" class="form-select"><option value="">—</option>{% for row in objects %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
-              <div class="col-md-4"><input name="volume" class="form-control" placeholder="1389.30"></div>
-              <div class="col-md-4"><input name="unit" class="form-control" placeholder="м3"></div>
-              <div class="col-md-4"><input name="trip_count" class="form-control" placeholder="88"></div>
-              <div class="col-md-6"><select name="movement_type" class="form-select"><option>pit_to_constructive</option><option>pit_to_stockpile</option><option>stockpile_to_constructive</option><option>constructive_to_dump</option><option>stockpile_to_dump</option><option selected>other</option></select></div>
-              <div class="col-md-6"><select name="labor_source_type" class="form-select"><option>own</option><option>hired</option><option>mixed</option><option selected>unknown</option></select></div>
-              <div class="col-12"><input name="contractor_name" class="form-control" placeholder="Подрядчик"></div>
-              <div class="col-12"><textarea name="comment" rows="2" class="form-control" placeholder="Комментарий"></textarea></div>
-              <div class="col-12 text-end"><button class="btn btn-primary">Добавить перевозку</button></div>
-            </form>
-          </div>
-        </div>
-      </div>
-      <div class="col-xl-6">
-        <div class="card h-100">
-          <div class="card-header fw-semibold">Добавить технику</div>
-          <div class="card-body">
-            <form method="post" action="/reports/{{ report.id }}/equipment" class="row g-2">
-              <div class="col-md-6"><input name="equipment_type" class="form-control" placeholder="самосвал" required></div>
-              <div class="col-md-6"><input name="brand_model" class="form-control" placeholder="FAW 806"></div>
-              <div class="col-md-6"><input name="unit_number" class="form-control" placeholder="Бортовой номер"></div>
-              <div class="col-md-6"><input name="plate_number" class="form-control" placeholder="с527хв27"></div>
-              <div class="col-md-6"><input name="operator_name" class="form-control" placeholder="ФИО"></div>
-              <div class="col-md-6"><select name="ownership_type" class="form-select"><option>own</option><option>hired_gen</option><option>hired_sub</option><option selected>unknown</option></select><div class="form-text">Своя / наёмная генподряд / наёмная субподряд</div></div>
-              <div class="col-md-6"><input name="contractor_name" class="form-control" placeholder="Подрядчик"></div>
-              <div class="col-md-6"><select name="status" class="form-select"><option>working</option><option>repair</option><option>out</option><option>standby</option><option selected>unknown</option></select></div>
-              <div class="col-12"><textarea name="comment" rows="2" class="form-control" placeholder="Комментарий"></textarea></div>
-              <div class="col-12 text-end"><button class="btn btn-primary">Добавить технику</button></div>
-            </form>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="row g-4 mt-1">
-      <div class="col-xl-6">
         <div class="card">
-          <div class="card-header fw-semibold">Список перевозок</div>
+          <div class="card-header fw-semibold">Перевозки</div>
           <div class="card-body small">
             {% for m in movements %}
               <div class="border rounded p-2 mb-3">
-                <div>{{ m.material_name or '—' }}: {{ m.from_object_name or '—' }} → {{ m.to_object_name or '—' }} · {{ m.volume or '—' }} {{ m.unit or '' }} · рейсы {{ m.trip_count or '—' }}</div>
-                <div class="small-muted mb-2">Тип: {{ m.movement_type or '—' }}</div>
-                {% for eu in m.equipment_usage %}
-                  <div class="border-top pt-2 mt-2">{{ eu.equipment_type }} · {{ eu.brand_model or '—' }} · {{ eu.unit_number or eu.plate_number or '—' }} · {{ eu.ownership_type or 'unknown' }}<div class="small-muted">рейсы: {{ eu.trips_count or '—' }} · объем: {{ eu.worked_volume or '—' }}</div></div>
-                {% else %}<div class="text-muted">Привязок техники к перевозке пока нет</div>{% endfor %}
-                <form method="post" action="/movements/{{ m.id }}/equipment-usage" class="row g-2 mt-2">
-                  <div class="col-md-5"><select name="report_equipment_unit_id" class="form-select" required><option value="">Выбери технику</option>{% for e in equipment %}<option value="{{ e.id }}">{{ e.equipment_type }} · {{ e.brand_model or '—' }} · {{ e.unit_number or e.plate_number or '—' }} · {{ e.ownership_type or 'unknown' }}</option>{% endfor %}</select></div>
-                  <div class="col-md-2"><input name="trips_count" class="form-control" placeholder="рейсы"></div>
-                  <div class="col-md-3"><input name="worked_volume" class="form-control" placeholder="объем"></div>
-                  <div class="col-md-2"><button class="btn btn-outline-dark w-100">Привязать</button></div>
-                  <div class="col-12"><input name="comment" class="form-control" placeholder="Комментарий"></div>
+                <form method="post" action="/movements/{{ m.id }}/edit" class="row g-2">
+                  <div class="col-md-6"><select name="material_id" class="form-select" required>{% for row in materials %}<option value="{{ row.id }}" {% if row.id == m.material_id %}selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></div>
+                  <div class="col-md-6"><select name="movement_type" class="form-select"><option value="pit_to_constructive" {% if m.movement_type=='pit_to_constructive' %}selected{% endif %}>pit_to_constructive</option><option value="pit_to_stockpile" {% if m.movement_type=='pit_to_stockpile' %}selected{% endif %}>pit_to_stockpile</option><option value="stockpile_to_constructive" {% if m.movement_type=='stockpile_to_constructive' %}selected{% endif %}>stockpile_to_constructive</option><option value="constructive_to_dump" {% if m.movement_type=='constructive_to_dump' %}selected{% endif %}>constructive_to_dump</option><option value="stockpile_to_dump" {% if m.movement_type=='stockpile_to_dump' %}selected{% endif %}>stockpile_to_dump</option><option value="other" {% if m.movement_type=='other' or not m.movement_type %}selected{% endif %}>other</option></select></div>
+                  <div class="col-md-6"><select name="from_object_id" class="form-select"><option value="">Откуда</option>{% for row in objects %}<option value="{{ row.id }}" {% if row.id == m.from_object_id %}selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></div>
+                  <div class="col-md-6"><select name="to_object_id" class="form-select"><option value="">Куда</option>{% for row in objects %}<option value="{{ row.id }}" {% if row.id == m.to_object_id %}selected{% endif %}>{{ row.name }}</option>{% endfor %}</select></div>
+                  <div class="col-md-3"><input name="volume" value="{{ m.volume or '' }}" class="form-control" placeholder="объем"></div>
+                  <div class="col-md-3"><input name="unit" value="{{ m.unit or '' }}" class="form-control" placeholder="ед."></div>
+                  <div class="col-md-3"><input name="trip_count" value="{{ m.trip_count or '' }}" class="form-control" placeholder="рейсы"></div>
+                  <div class="col-md-3"><select name="labor_source_type" class="form-select"><option value="own" {% if m.labor_source_type=='own' %}selected{% endif %}>own</option><option value="hired" {% if m.labor_source_type=='hired' %}selected{% endif %}>hired</option><option value="mixed" {% if m.labor_source_type=='mixed' %}selected{% endif %}>mixed</option><option value="unknown" {% if m.labor_source_type=='unknown' or not m.labor_source_type %}selected{% endif %}>unknown</option></select></div>
+                  <div class="col-md-6"><input name="contractor_name" value="{{ m.contractor_name or '' }}" class="form-control" placeholder="Подрядчик"></div>
+                  <div class="col-md-6"><input name="comment" value="{{ m.comment or '' }}" class="form-control" placeholder="Комментарий"></div>
+                  <div class="col-12 d-flex justify-content-end"><button class="btn btn-sm btn-outline-primary">Сохранить перевозку</button></div>
                 </form>
               </div>
             {% else %}<div class="text-muted">Перевозок пока нет</div>{% endfor %}
@@ -184,20 +130,22 @@
       </div>
       <div class="col-xl-6">
         <div class="card">
-          <div class="card-header fw-semibold">Список техники</div>
+          <div class="card-header fw-semibold">Техника</div>
           <div class="card-body small">
             {% for e in equipment %}
               <div class="border rounded p-2 mb-3">
-                <div class="fw-semibold">{{ e.equipment_type }} · {{ e.brand_model or '—' }} · {{ e.unit_number or e.plate_number or '—' }}</div>
-                <div class="small-muted">{{ e.ownership_type or 'unknown' }} · {{ e.status or 'unknown' }} · {{ e.contractor_name or 'без подрядчика' }}</div>
-                <div class="mt-2">
-                  <div class="small fw-semibold">Работы</div>
-                  {% for wu in e.work_usage %}<div class="border-top pt-1">{{ wu.work_type_name or wu.work_name_raw or 'Работа' }} · объем {{ wu.worked_volume or '—' }} · рейсы {{ wu.trips_count or '—' }}</div>{% else %}<div class="text-muted">Нет привязок к работам</div>{% endfor %}
-                </div>
-                <div class="mt-2">
-                  <div class="small fw-semibold">Перевозки</div>
-                  {% for mu in e.movement_usage %}<div class="border-top pt-1">{{ mu.material_name or 'Материал' }} · {{ mu.movement_type or '—' }} · объем {{ mu.worked_volume or '—' }} · рейсы {{ mu.trips_count or '—' }}</div>{% else %}<div class="text-muted">Нет привязок к перевозкам</div>{% endfor %}
-                </div>
+                <form method="post" action="/equipment/{{ e.id }}/edit" class="row g-2">
+                  <div class="col-md-6"><input name="equipment_type" value="{{ e.equipment_type or '' }}" class="form-control" placeholder="тип" required></div>
+                  <div class="col-md-6"><input name="brand_model" value="{{ e.brand_model or '' }}" class="form-control" placeholder="модель"></div>
+                  <div class="col-md-4"><input name="unit_number" value="{{ e.unit_number or '' }}" class="form-control" placeholder="бортовой"></div>
+                  <div class="col-md-4"><input name="plate_number" value="{{ e.plate_number or '' }}" class="form-control" placeholder="госномер"></div>
+                  <div class="col-md-4"><input name="operator_name" value="{{ e.operator_name or '' }}" class="form-control" placeholder="оператор"></div>
+                  <div class="col-md-4"><select name="ownership_type" class="form-select"><option value="own" {% if e.ownership_type=='own' %}selected{% endif %}>own</option><option value="hired_gen" {% if e.ownership_type=='hired_gen' %}selected{% endif %}>hired_gen</option><option value="hired_sub" {% if e.ownership_type=='hired_sub' %}selected{% endif %}>hired_sub</option><option value="unknown" {% if e.ownership_type=='unknown' or not e.ownership_type %}selected{% endif %}>unknown</option></select></div>
+                  <div class="col-md-4"><input name="contractor_name" value="{{ e.contractor_name or '' }}" class="form-control" placeholder="подрядчик"></div>
+                  <div class="col-md-4"><select name="status" class="form-select"><option value="working" {% if e.status=='working' %}selected{% endif %}>working</option><option value="repair" {% if e.status=='repair' %}selected{% endif %}>repair</option><option value="out" {% if e.status=='out' %}selected{% endif %}>out</option><option value="standby" {% if e.status=='standby' %}selected{% endif %}>standby</option><option value="unknown" {% if e.status=='unknown' or not e.status %}selected{% endif %}>unknown</option></select></div>
+                  <div class="col-12"><input name="comment" value="{{ e.comment or '' }}" class="form-control" placeholder="Комментарий"></div>
+                  <div class="col-12 d-flex justify-content-end"><button class="btn btn-sm btn-outline-primary">Сохранить технику</button></div>
+                </form>
               </div>
             {% else %}<div class="text-muted">Техники пока нет</div>{% endfor %}
           </div>
