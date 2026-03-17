@@ -187,7 +187,103 @@ def equipment_for_report(db: Session, report_id):
         .where(report_equipment_units.c.daily_report_id == report_id)
         .order_by(report_equipment_units.c.created_at.desc())
     )
-    return db.execute(stmt).mappings().all()
+    rows = db.execute(stmt).mappings().all()
+    if not rows:
+        return []
+    equipment_ids = [r["id"] for r in rows]
+    work_usage_rows = db.execute(
+        select(
+            work_item_equipment_usage,
+            daily_work_items.c.work_name_raw,
+            work_types.c.name.label("work_type_name"),
+        )
+        .select_from(
+            work_item_equipment_usage.join(daily_work_items, daily_work_items.c.id == work_item_equipment_usage.c.daily_work_item_id)
+            .outerjoin(work_types, work_types.c.id == daily_work_items.c.work_type_id)
+        )
+        .where(work_item_equipment_usage.c.report_equipment_unit_id.in_(equipment_ids))
+        .order_by(work_item_equipment_usage.c.created_at.asc())
+    ).mappings().all()
+    movement_usage_rows = db.execute(
+        select(
+            material_movement_equipment_usage,
+            materials.c.name.label("material_name"),
+            material_movements.c.movement_type,
+        )
+        .select_from(
+            material_movement_equipment_usage.join(material_movements, material_movements.c.id == material_movement_equipment_usage.c.material_movement_id)
+            .outerjoin(materials, materials.c.id == material_movements.c.material_id)
+        )
+        .where(material_movement_equipment_usage.c.report_equipment_unit_id.in_(equipment_ids))
+        .order_by(material_movement_equipment_usage.c.created_at.asc())
+    ).mappings().all()
+    work_map = {}
+    for row in work_usage_rows:
+        work_map.setdefault(row["report_equipment_unit_id"], []).append(dict(row))
+    mov_map = {}
+    for row in movement_usage_rows:
+        mov_map.setdefault(row["report_equipment_unit_id"], []).append(dict(row))
+    result = []
+    for row in rows:
+        item = dict(row)
+        item["work_usage"] = work_map.get(row["id"], [])
+        item["movement_usage"] = mov_map.get(row["id"], [])
+        result.append(item)
+    return result
+
+
+def enrich_work_items_with_usage(db: Session, items):
+    if not items:
+        return items
+    item_ids = [r["id"] for r in items]
+    usage_rows = db.execute(
+        select(
+            work_item_equipment_usage,
+            report_equipment_units.c.equipment_type,
+            report_equipment_units.c.brand_model,
+            report_equipment_units.c.unit_number,
+            report_equipment_units.c.plate_number,
+            report_equipment_units.c.ownership_type,
+            report_equipment_units.c.contractor_name,
+        )
+        .select_from(
+            work_item_equipment_usage.join(report_equipment_units, report_equipment_units.c.id == work_item_equipment_usage.c.report_equipment_unit_id)
+        )
+        .where(work_item_equipment_usage.c.daily_work_item_id.in_(item_ids))
+        .order_by(work_item_equipment_usage.c.created_at.asc())
+    ).mappings().all()
+    usage_map = {}
+    for row in usage_rows:
+        usage_map.setdefault(row["daily_work_item_id"], []).append(dict(row))
+    for item in items:
+        item["equipment_usage"] = usage_map.get(item["id"], [])
+    return items
+
+
+def enrich_movements_with_usage(db: Session, rows):
+    if not rows:
+        return rows
+    movement_ids = [r["id"] for r in rows]
+    usage_rows = db.execute(
+        select(
+            material_movement_equipment_usage,
+            report_equipment_units.c.equipment_type,
+            report_equipment_units.c.brand_model,
+            report_equipment_units.c.unit_number,
+            report_equipment_units.c.plate_number,
+            report_equipment_units.c.ownership_type,
+            report_equipment_units.c.contractor_name,
+        )
+        .select_from(material_movement_equipment_usage.join(report_equipment_units, report_equipment_units.c.id == material_movement_equipment_usage.c.report_equipment_unit_id))
+        .where(material_movement_equipment_usage.c.material_movement_id.in_(movement_ids))
+        .order_by(material_movement_equipment_usage.c.created_at.asc())
+    ).mappings().all()
+    usage_map = {}
+    for row in usage_rows:
+        usage_map.setdefault(row["material_movement_id"], []).append(dict(row))
+    for row in rows:
+        row["equipment_usage"] = usage_map.get(row["id"], [])
+    return rows
 
 
 def create_parse_candidate(db: Session, report_id, raw_text: str | None):
@@ -354,11 +450,13 @@ def report_card(request: Request, report_id: str):
             raise HTTPException(404, "Report not found")
         ctx = base_context(request, db)
         ctx.update(all_lookup_rows(db))
+        work_items = enrich_work_items_with_usage(db, work_items_for_report(db, report_id))
+        movements = enrich_movements_with_usage(db, movements_for_report(db, report_id))
         ctx.update(
             report=report,
             candidates=parse_candidates_for_report(db, report_id),
-            work_items=work_items_for_report(db, report_id),
-            movements=movements_for_report(db, report_id),
+            work_items=work_items,
+            movements=movements,
             equipment=equipment_for_report(db, report_id),
         )
         return templates.TemplateResponse("report_card.html", ctx)
@@ -393,11 +491,13 @@ def review_report(request: Request, report_id: str):
         if not report:
             raise HTTPException(404, "Report not found")
         ctx = base_context(request, db)
+        work_items = enrich_work_items_with_usage(db, work_items_for_report(db, report_id))
+        movements = enrich_movements_with_usage(db, movements_for_report(db, report_id))
         ctx.update(
             report=report,
             candidates=parse_candidates_for_report(db, report_id),
-            work_items=work_items_for_report(db, report_id),
-            movements=movements_for_report(db, report_id),
+            work_items=work_items,
+            movements=movements,
             equipment=equipment_for_report(db, report_id),
         )
         return templates.TemplateResponse("report_review.html", ctx)
@@ -546,6 +646,60 @@ def add_equipment(
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 
 
+@app.post("/work-items/{item_id}/equipment-usage")
+def add_work_item_equipment_usage(
+    item_id: str,
+    report_equipment_unit_id: str = Form(...),
+    trips_count: str = Form(""),
+    worked_volume: str = Form(""),
+    worked_area: str = Form(""),
+    worked_length: str = Form(""),
+    comment: str = Form(""),
+):
+    with SessionLocal() as db:
+        report_id = db.execute(select(daily_work_items.c.daily_report_id).where(daily_work_items.c.id == item_id)).scalar_one()
+        db.execute(
+            insert(work_item_equipment_usage).values(
+                id=uuid4(),
+                daily_work_item_id=item_id,
+                report_equipment_unit_id=report_equipment_unit_id,
+                trips_count=to_int(trips_count),
+                worked_volume=to_decimal(worked_volume),
+                worked_area=to_decimal(worked_area),
+                worked_length=to_decimal(worked_length),
+                comment=comment or None,
+            )
+        )
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="needs_review"))
+        db.commit()
+    return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
+
+
+@app.post("/movements/{movement_id}/equipment-usage")
+def add_movement_equipment_usage(
+    movement_id: str,
+    report_equipment_unit_id: str = Form(...),
+    trips_count: str = Form(""),
+    worked_volume: str = Form(""),
+    comment: str = Form(""),
+):
+    with SessionLocal() as db:
+        report_id = db.execute(select(material_movements.c.daily_report_id).where(material_movements.c.id == movement_id)).scalar_one()
+        db.execute(
+            insert(material_movement_equipment_usage).values(
+                id=uuid4(),
+                material_movement_id=movement_id,
+                report_equipment_unit_id=report_equipment_unit_id,
+                trips_count=to_int(trips_count),
+                worked_volume=to_decimal(worked_volume),
+                comment=comment or None,
+            )
+        )
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="needs_review"))
+        db.commit()
+    return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
+
+
 @app.get("/work-items", response_class=HTMLResponse)
 def work_items_page(request: Request, days: int = 14):
     with SessionLocal() as db:
@@ -665,15 +819,24 @@ def analytics_page(request: Request, days: int = 30):
         ).mappings().all()
         equipment_stats = db.execute(
             select(
+                report_equipment_units.c.ownership_type,
                 report_equipment_units.c.equipment_type,
                 func.count(report_equipment_units.c.id).label("count_total"),
                 func.sum(case((report_equipment_units.c.status == 'working', 1), else_=0)).label("working_count"),
                 func.sum(case((report_equipment_units.c.status == 'repair', 1), else_=0)).label("repair_count"),
+                func.coalesce(func.sum(work_item_equipment_usage.c.worked_volume), 0).label("work_volume"),
+                func.coalesce(func.sum(material_movement_equipment_usage.c.worked_volume), 0).label("movement_volume"),
+                func.coalesce(func.sum(work_item_equipment_usage.c.trips_count), 0).label("work_trips"),
+                func.coalesce(func.sum(material_movement_equipment_usage.c.trips_count), 0).label("movement_trips"),
             )
-            .select_from(report_equipment_units.join(daily_reports, daily_reports.c.id == report_equipment_units.c.daily_report_id))
+            .select_from(
+                report_equipment_units.join(daily_reports, daily_reports.c.id == report_equipment_units.c.daily_report_id)
+                .outerjoin(work_item_equipment_usage, work_item_equipment_usage.c.report_equipment_unit_id == report_equipment_units.c.id)
+                .outerjoin(material_movement_equipment_usage, material_movement_equipment_usage.c.report_equipment_unit_id == report_equipment_units.c.id)
+            )
             .where(daily_reports.c.report_date >= since)
-            .group_by(report_equipment_units.c.equipment_type)
-            .order_by(report_equipment_units.c.equipment_type)
+            .group_by(report_equipment_units.c.ownership_type, report_equipment_units.c.equipment_type)
+            .order_by(report_equipment_units.c.ownership_type, report_equipment_units.c.equipment_type)
         ).mappings().all()
         ctx.update(section_stats=section_stats, object_stats=object_stats, material_stats=material_stats, equipment_stats=equipment_stats, days=days)
         return templates.TemplateResponse("analytics.html", ctx)

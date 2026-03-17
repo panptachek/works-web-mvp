@@ -39,12 +39,18 @@
             <div><b>{{ item.work_type_name or item.work_name_raw or 'Работа' }}</b></div>
             <div class="small-muted">{{ item.object_name or '—' }} · {{ item.volume or '—' }} {{ item.unit or '' }}</div>
             {% for seg in item.segments %}<div class="small mono">{{ seg.pk_start }} → {{ seg.pk_end }} · {{ seg.volume_segment or '—' }}</div>{% endfor %}
+            <div class="mt-2 small"><b>Техника по работе:</b></div>
+            {% for eu in item.equipment_usage %}<div class="small mono">{{ eu.equipment_type }} · {{ eu.unit_number or eu.plate_number or '—' }} · {{ eu.ownership_type or 'unknown' }} · рейсы {{ eu.trips_count or '—' }} · объем {{ eu.worked_volume or '—' }}</div>{% else %}<div class="text-muted small">Нет привязок техники</div>{% endfor %}
           </div>
         {% else %}<div class="text-muted mb-3">Работ нет</div>{% endfor %}
         <h2 class="h6 mt-4">Перевозки</h2>
-        {% for m in movements %}<div class="border rounded p-2 mb-2">{{ m.material_name or '—' }}: {{ m.from_object_name or '—' }} → {{ m.to_object_name or '—' }} · {{ m.volume or '—' }} {{ m.unit or '' }}</div>{% else %}<div class="text-muted mb-3">Перевозок нет</div>{% endfor %}
+        {% for m in movements %}
+          <div class="border rounded p-2 mb-2">{{ m.material_name or '—' }}: {{ m.from_object_name or '—' }} → {{ m.to_object_name or '—' }} · {{ m.volume or '—' }} {{ m.unit or '' }}
+            {% for eu in m.equipment_usage %}<div class="small mono">{{ eu.equipment_type }} · {{ eu.unit_number or eu.plate_number or '—' }} · {{ eu.ownership_type or 'unknown' }} · рейсы {{ eu.trips_count or '—' }} · объем {{ eu.worked_volume or '—' }}</div>{% else %}<div class="text-muted small">Нет привязок техники</div>{% endfor %}
+          </div>
+        {% else %}<div class="text-muted mb-3">Перевозок нет</div>{% endfor %}
         <h2 class="h6 mt-4">Техника</h2>
-        {% for e in equipment %}<div class="border rounded p-2 mb-2">{{ e.equipment_type }} · {{ e.brand_model or '—' }} · {{ e.unit_number or e.plate_number or '—' }} · {{ e.status or 'unknown' }}</div>{% else %}<div class="text-muted">Техники нет</div>{% endfor %}
+        {% for e in equipment %}<div class="border rounded p-2 mb-2">{{ e.equipment_type }} · {{ e.brand_model or '—' }} · {{ e.unit_number or e.plate_number or '—' }} · {{ e.ownership_type or 'unknown' }} · {{ e.status or 'unknown' }}</div>{% else %}<div class="text-muted">Техники нет</div>{% endfor %}
       </div>
     </div>
   </div>
