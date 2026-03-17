@@ -309,7 +309,7 @@ def base_context(request: Request, db: Session):
     today = date.today()
     drafts_count = db.execute(
         select(func.count()).select_from(daily_reports).where(
-            or_(daily_reports.c.operator_status.is_(None), daily_reports.c.operator_status.in_(["draft", "needs_review"]))
+            or_(daily_reports.c.operator_status.is_(None), daily_reports.c.operator_status == "pending")
         )
     ).scalar_one()
     confirmed_count = db.execute(
@@ -362,7 +362,7 @@ def home(request: Request):
         drafts = db.execute(
             select(daily_reports, construction_sections.c.name.label("section_name"))
             .select_from(daily_reports.outerjoin(construction_sections, construction_sections.c.id == daily_reports.c.section_id))
-            .where(or_(daily_reports.c.operator_status.is_(None), daily_reports.c.operator_status.in_(["draft", "needs_review"])))
+            .where(or_(daily_reports.c.operator_status.is_(None), daily_reports.c.operator_status == "pending"))
             .order_by(daily_reports.c.report_date.desc(), daily_reports.c.created_at.desc())
             .limit(10)
         ).mappings().all()
@@ -418,8 +418,8 @@ def reports_new_submit(
                 source_type=source_type,
                 source_reference=source_reference or None,
                 raw_text=raw_text or None,
-                parse_status="parsed_stub" if raw_text else "empty",
-                operator_status="draft",
+                parse_status="needs_review" if raw_text else "new",
+                operator_status="pending",
             )
         )
         if raw_text.strip():
@@ -435,7 +435,7 @@ def reports_drafts(request: Request):
         rows = db.execute(
             select(daily_reports, construction_sections.c.name.label("section_name"))
             .select_from(daily_reports.outerjoin(construction_sections, construction_sections.c.id == daily_reports.c.section_id))
-            .where(or_(daily_reports.c.operator_status.is_(None), daily_reports.c.operator_status.in_(["draft", "needs_review"])))
+            .where(or_(daily_reports.c.operator_status.is_(None), daily_reports.c.operator_status == "pending"))
             .order_by(daily_reports.c.report_date.desc(), daily_reports.c.created_at.desc())
         ).mappings().all()
         ctx["drafts"] = rows
@@ -468,7 +468,7 @@ def approve_report(report_id: str, approved_by: str = Form("operator")):
         db.execute(
             daily_reports.update()
             .where(daily_reports.c.id == report_id)
-            .values(operator_status="approved", parse_status="reviewed")
+            .values(operator_status="approved", parse_status="approved")
         )
         db.execute(
             daily_work_items.update()
@@ -538,7 +538,7 @@ def add_work_item(
                 comment=comment or None,
             )
         )
-        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="needs_review"))
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="pending"))
         db.commit()
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 
@@ -565,7 +565,7 @@ def add_work_segment(
             )
         )
         report_id = db.execute(select(daily_work_items.c.daily_report_id).where(daily_work_items.c.id == item_id)).scalar_one()
-        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="needs_review"))
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="pending"))
         db.commit()
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 
@@ -607,7 +607,7 @@ def add_movement(
                 comment=comment or None,
             )
         )
-        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="needs_review"))
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="pending"))
         db.commit()
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 
@@ -641,7 +641,7 @@ def add_equipment(
                 comment=comment or None,
             )
         )
-        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="needs_review"))
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="pending"))
         db.commit()
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 
@@ -670,7 +670,7 @@ def add_work_item_equipment_usage(
                 comment=comment or None,
             )
         )
-        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="needs_review"))
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="pending"))
         db.commit()
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 
@@ -695,7 +695,7 @@ def add_movement_equipment_usage(
                 comment=comment or None,
             )
         )
-        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="needs_review"))
+        db.execute(daily_reports.update().where(daily_reports.c.id == report_id).values(operator_status="pending"))
         db.commit()
     return RedirectResponse(url=f"/reports/{report_id}", status_code=303)
 
