@@ -66,13 +66,16 @@ cd works-web-mvp
 cp .env.example .env
 ```
 
-2. Если приложение должно ходить к БД на хосте, оставить:
+2. Приложение должно ходить к PostgreSQL-контейнеру по общей docker network:
 ```env
-DB_HOST=host.docker.internal
-DB_PORT=5433
+DB_HOST=works_postgres_v2
+DB_PORT=5432
 ```
 
-3. Поднять контейнеры:
+3. В `docker-compose.yml` уже подключена внешняя сеть:
+- `works-system-v2_default`
+
+4. Поднять контейнеры:
 ```bash
 docker compose up -d --build
 ```
