@@ -1,0 +1,4 @@
+﻿object_code,name,object_type_code,constructive_code,is_active,comment
+OBJ_MAIN_001,"Основной ход, участок 1",MAIN_TRACK,POH,True,Линейный объект
+OBJ_TEMP_007,Притрассовая дорога №7,TEMP_ROAD,VPD,True,Временная дорога
+OBJ_STOCK_01,Накопитель песка №1,STOCKPILE,VPD,True,Временный накопитель

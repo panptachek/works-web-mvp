@@ -1,0 +1,4 @@
+﻿object_code,work_type_code,pk_start,pk_end,project_volume_segment,comment
+OBJ_MAIN_001,EMBANKMENT_BUILD,287800.0,290000.0,4200.0,Первый сегмент
+OBJ_MAIN_001,EMBANKMENT_BUILD,290000.0,292500.0,3800.0,Второй сегмент
+OBJ_MAIN_001,SLOPE_PLANING,287800.0,289500.0,1200.0,Откосы сегмент 1

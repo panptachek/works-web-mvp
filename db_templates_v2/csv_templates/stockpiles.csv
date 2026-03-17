@@ -1,0 +1,4 @@
+﻿object_code,material_code,name,is_active
+OBJ_STOCK_01,SAND,Накопитель песка №1,True
+OBJ_STOCK_01,SOIL,Накопитель грунта №1,True
+OBJ_STOCK_01,SHPGS,Накопитель ЩПГС №1,True

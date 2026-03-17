@@ -1,0 +1,4 @@
+﻿report_date,source_reference,object_code,work_type_code,equipment_type,unit_number,trips_count,worked_volume,worked_area,worked_length,comment
+2026-03-14,msg-001,OBJ_MAIN_001,EMBANKMENT_BUILD,Самосвал,451,18,320.0,,,Вывоз грунта
+2026-03-14,msg-001,OBJ_MAIN_001,EMBANKMENT_BUILD,Экскаватор,233,8,540.0,,,Разработка
+2026-03-15,excel-001,OBJ_TEMP_007,ROAD_MAINTENANCE,Бульдозер,117,4,,1200.0,,Планировка дороги

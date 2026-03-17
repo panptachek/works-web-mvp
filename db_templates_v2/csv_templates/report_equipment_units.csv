@@ -1,0 +1,4 @@
+﻿source_reference,equipment_type,brand_model,unit_number,plate_number,operator_name,ownership_type,contractor_name,status,comment
+msg-001,Самосвал,Shacman X3000,451,А123ВС,Иванов,own,,working,На линии
+msg-001,Экскаватор,CAT 320,233,,Петров,own,,working,Разработка грунта
+msg-002,Бульдозер,Komatsu D65,117,,Сидоров,hired,ООО Подряд,standby,Ожидание указаний

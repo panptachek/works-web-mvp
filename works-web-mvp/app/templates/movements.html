@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Перевозки{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Перевозки за последние {{ days }} дней</h1>
+<div class="card"><div class="table-responsive"><table class="table table-sm mb-0">
+<thead><tr><th>Дата</th><th>Участок</th><th>Материал</th><th>Откуда</th><th>Куда</th><th>Объем</th><th>Рейсы</th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td>{{ row.report_date }}</td><td>{{ row.section_name or '—' }}</td><td>{{ row.material_name or '—' }}</td><td>{{ row.from_object_name or '—' }}</td><td>{{ row.to_object_name or '—' }}</td><td>{{ row.volume or '—' }} {{ row.unit or '' }}</td><td>{{ row.trip_count or '—' }}</td>
+</tr>
+{% else %}<tr><td colspan="7" class="text-center text-muted py-5">Нет данных</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

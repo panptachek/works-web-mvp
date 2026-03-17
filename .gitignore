@@ -1,0 +1,43 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+
+# Env / secrets
+.env
+*.env
+*.pem
+*.key
+*.p12
+
+# OpenClaw local/private files
+MEMORY.md
+USER.md
+IDENTITY.md
+memory/
+SOUL.md
+TOOLS.md
+AGENTS.md
+BOOTSTRAP.md
+WATCHDOG.md
+HEARTBEAT.md
+COSTS.md
+supervisor-state.json
+.openclaw/
+.claude/
+.clawhub/
+
+# Private datasets / exports / dumps / media
+input_report.xlsx
+works_db_v2_export.xlsx
+works_db_v2_schema.sql
+*.wav
+*.ogg
+*.jpg
+*.jpeg
+*.png
+*.webp
+*.gif
+
+# Node noise
+node_modules/

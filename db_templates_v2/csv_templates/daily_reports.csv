@@ -1,0 +1,4 @@
+﻿report_date,shift,section_code,source_type,source_reference,raw_text,parse_status,operator_status
+2026-03-14,day,UCH_1,max_message,msg-001,"Разработка грунта, возведение полотна, работала техника",parsed,approved
+2026-03-14,day,UCH_2,max_message,msg-002,Замена слабого грунта и перевозка песка,needs_review,pending
+2026-03-15,night,UCH_1,excel_import,excel-001,Ночное содержание дороги и профилирование,parsed,approved

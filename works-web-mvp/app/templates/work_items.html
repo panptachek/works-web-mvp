@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Работы{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Работы за последние {{ days }} дней</h1>
+<div class="card"><div class="table-responsive"><table class="table table-sm mb-0">
+<thead><tr><th>Дата</th><th>Участок</th><th>Объект</th><th>Работа</th><th>Объем</th><th>Подтверждено</th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td>{{ row.report_date }}</td><td>{{ row.section_name or '—' }}</td><td>{{ row.object_name or '—' }}</td><td>{{ row.work_type_name or row.work_name_raw or '—' }}</td><td>{{ row.volume or '—' }} {{ row.unit or '' }}</td><td>{{ row.approved_at or '—' }}</td>
+</tr>
+{% else %}<tr><td colspan="6" class="text-center text-muted py-5">Нет данных</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

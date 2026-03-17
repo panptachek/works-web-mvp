@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+{% block title %}Аналитика по пикетажу{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Аналитика по пикетажу</h1>
+<div class="card mb-4"><div class="card-body">
+  <form method="get" class="row g-3 align-items-end">
+    <div class="col-md-4"><label class="form-label">Пикетаж от</label><input class="form-control" name="pk_start" value="{{ pk_start }}" placeholder="328950.00"></div>
+    <div class="col-md-4"><label class="form-label">Пикетаж до</label><input class="form-control" name="pk_end" value="{{ pk_end }}" placeholder="330500.00"></div>
+    <div class="col-md-4"><button class="btn btn-primary">Искать</button></div>
+  </form>
+</div></div>
+<div class="row g-4">
+  <div class="col-xl-4"><div class="card"><div class="card-header fw-semibold">Объекты в диапазоне</div><div class="card-body small">{% for row in object_rows %}<div class="border-bottom py-2">{{ row.object_name }} · {{ row.pk_start }} → {{ row.pk_end }}</div>{% else %}<div class="text-muted">Нет данных</div>{% endfor %}</div></div></div>
+  <div class="col-xl-4"><div class="card"><div class="card-header fw-semibold">Проектные объемы</div><div class="card-body small">{% for row in project_rows %}<div class="border-bottom py-2">{{ row.work_type_name or '—' }} · сегмент {{ row.pk_start }} → {{ row.pk_end }} · {{ row.project_volume_segment or row.project_volume }}</div>{% else %}<div class="text-muted">Нет данных</div>{% endfor %}</div></div></div>
+  <div class="col-xl-4"><div class="card"><div class="card-header fw-semibold">Фактические объемы</div><div class="card-body small">{% for row in fact_rows %}<div class="border-bottom py-2">{{ row.report_date }} · {{ row.work_type_name or row.work_name_raw or '—' }} · {{ row.pk_start }} → {{ row.pk_end }} · {{ row.volume_segment or '—' }}</div>{% else %}<div class="text-muted">Нет данных</div>{% endfor %}</div></div></div>
+</div>
+{% endblock %}

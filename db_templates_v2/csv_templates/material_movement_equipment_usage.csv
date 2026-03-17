@@ -1,0 +1,4 @@
+﻿report_date,source_reference,material_code,from_object_code,to_object_code,equipment_type,unit_number,trips_count,worked_volume,comment
+2026-03-14,msg-001,SOIL,OBJ_MAIN_001,OBJ_STOCK_01,Самосвал,451,18,320.0,Вывоз грунта
+2026-03-14,msg-002,SAND,OBJ_STOCK_01,OBJ_MAIN_001,Самосвал,451,24,600.0,Подача песка
+2026-03-15,excel-001,SHPGS,OBJ_STOCK_01,OBJ_TEMP_007,Самосвал,452,9,180.0,Подсыпка дороги

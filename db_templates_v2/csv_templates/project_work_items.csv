@@ -1,0 +1,4 @@
+﻿object_code,constructive_code,work_type_code,project_volume,unit,source_reference,comment
+OBJ_MAIN_001,POH,EMBANKMENT_BUILD,12500.0,м3,Проект том 4,Земполотно по участку 1
+OBJ_TEMP_007,VPD,ROAD_MAINTENANCE,4.5,км,Проект ВПД,Содержание дороги
+OBJ_MAIN_001,POH,SLOPE_PLANING,3200.0,м2,Проект откосов,Планировка откосов

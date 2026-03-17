@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Участки{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Участки и версии границ</h1>
+<div class="card"><div class="table-responsive"><table class="table table-sm mb-0">
+<thead><tr><th>Участок</th><th>Код</th><th>valid_from</th><th>valid_to</th><th>PK от</th><th>PK до</th><th>Текст</th><th>Текущая</th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td>{{ row.name }}</td><td>{{ row.code }}</td><td>{{ row.valid_from or '—' }}</td><td>{{ row.valid_to or '—' }}</td><td>{{ row.pk_start or '—' }}</td><td>{{ row.pk_end or '—' }}</td><td>{{ row.pk_raw_text or '—' }}</td><td>{{ 'Да' if row.is_current else '—' }}</td>
+</tr>
+{% else %}<tr><td colspan="8" class="text-center text-muted py-5">Нет данных</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block title %}Аналитика{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Аналитика за последние {{ days }} дней</h1>
+<div class="row g-4">
+  <div class="col-xl-6">
+    <div class="card"><div class="card-header fw-semibold">По участкам</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Участок</th><th>Работы</th><th>Перевозки</th><th>Техника</th></tr></thead><tbody>{% for row in section_stats %}<tr><td>{{ row.section_name }}</td><td>{{ row.work_items_count }}</td><td>{{ row.movements_count }}</td><td>{{ row.equipment_count }}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted py-4">Нет данных</td></tr>{% endfor %}</tbody></table></div></div>
+  </div>
+  <div class="col-xl-6">
+    <div class="card"><div class="card-header fw-semibold">По материалам</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Материал</th><th>Движений</th><th>Объем</th><th>Рейсы</th></tr></thead><tbody>{% for row in material_stats %}<tr><td>{{ row.material_name }}</td><td>{{ row.moves_count }}</td><td>{{ row.volume_sum }}</td><td>{{ row.trip_sum }}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted py-4">Нет данных</td></tr>{% endfor %}</tbody></table></div></div>
+  </div>
+  <div class="col-xl-7">
+    <div class="card"><div class="card-header fw-semibold">По объектам</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Объект</th><th>Проект</th><th>Факт</th><th>%</th></tr></thead><tbody>{% for row in object_stats %}<tr><td>{{ row.object_name }}</td><td>{{ row.project_volume }}</td><td>{{ row.fact_volume }}</td><td>{% if row.project_volume and row.project_volume != 0 %}{{ ('%.1f'|format((row.fact_volume / row.project_volume) * 100)) }}%{% else %}—{% endif %}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted py-4">Нет данных</td></tr>{% endfor %}</tbody></table></div></div>
+  </div>
+  <div class="col-xl-5">
+    <div class="card"><div class="card-header fw-semibold">По технике</div><div class="table-responsive"><table class="table table-sm mb-0"><thead><tr><th>Тип</th><th>Всего</th><th>В работе</th><th>В ремонте</th></tr></thead><tbody>{% for row in equipment_stats %}<tr><td>{{ row.equipment_type or '—' }}</td><td>{{ row.count_total }}</td><td>{{ row.working_count }}</td><td>{{ row.repair_count }}</td></tr>{% else %}<tr><td colspan="4" class="text-center text-muted py-4">Нет данных</td></tr>{% endfor %}</tbody></table></div></div>
+  </div>
+</div>
+{% endblock %}

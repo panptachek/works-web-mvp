@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block title %}Черновики{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 mb-0">Черновики</h1>
+  <a class="btn btn-primary" href="/reports/new">Новый отчет</a>
+</div>
+<div class="card">
+  <div class="table-responsive">
+    <table class="table mb-0">
+      <thead><tr><th>Дата</th><th>Смена</th><th>Участок</th><th>Источник</th><th>Статус</th><th></th></tr></thead>
+      <tbody>
+      {% for row in drafts %}
+        <tr>
+          <td>{{ row.report_date }}</td>
+          <td>{{ row.shift }}</td>
+          <td>{{ row.section_name or '—' }}</td>
+          <td>{{ row.source_type }}</td>
+          <td><span class="status-pill {% if row.operator_status == 'approved' %}status-green{% else %}status-yellow{% endif %}">{{ row.operator_status or 'draft' }}</span></td>
+          <td class="text-end">
+            <a class="btn btn-sm btn-outline-primary" href="/reports/{{ row.id }}">Карточка</a>
+            <a class="btn btn-sm btn-outline-secondary" href="/reports/{{ row.id }}/review">Проверка</a>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6" class="text-center text-muted py-5">Черновиков нет</td></tr>
+      {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

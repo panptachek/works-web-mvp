@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block title %}Техника{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Техника за последние {{ days }} дней</h1>
+<div class="card"><div class="table-responsive"><table class="table table-sm mb-0">
+<thead><tr><th>Дата</th><th>Участок</th><th>Тип</th><th>Марка</th><th>Номер</th><th>Водитель</th><th>Статус</th></tr></thead>
+<tbody>
+{% for row in rows %}
+<tr>
+<td>{{ row.report_date }}</td><td>{{ row.section_name or '—' }}</td><td>{{ row.equipment_type }}</td><td>{{ row.brand_model or '—' }}</td><td>{{ row.unit_number or row.plate_number or '—' }}</td><td>{{ row.operator_name or '—' }}</td><td>{{ row.status or 'unknown' }}</td>
+</tr>
+{% else %}<tr><td colspan="7" class="text-center text-muted py-5">Нет данных</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% endblock %}

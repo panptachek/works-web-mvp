@@ -1,0 +1,163 @@
+{% extends 'base.html' %}
+{% block title %}Карточка отчета{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h3 mb-1">Карточка отчета</h1>
+    <div class="small-muted">{{ report.report_date }} / {{ report.shift }} / {{ report.section_name or 'Без участка' }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="/reports/{{ report.id }}/review">Экран проверки</a>
+    <a class="btn btn-outline-primary" href="/reports/drafts">К черновикам</a>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-5">
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Шапка отчета</div>
+      <div class="card-body small">
+        <div><b>Источник:</b> {{ report.source_type }}</div>
+        <div><b>Ссылка/ID:</b> {{ report.source_reference or '—' }}</div>
+        <div><b>Parse status:</b> {{ report.parse_status or '—' }}</div>
+        <div><b>Operator status:</b> {{ report.operator_status or 'draft' }}</div>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Исходный текст</div>
+      <div class="card-body"><pre class="raw-text">{{ report.raw_text or 'Исходный текст отсутствует' }}</pre></div>
+    </div>
+    <div class="card">
+      <div class="card-header fw-semibold">Авторазбор / parse candidates</div>
+      <div class="card-body">
+        {% for c in candidates %}
+          <div class="border rounded p-2 mb-2">
+            <div class="d-flex justify-content-between"><b>{{ c.candidate_type }}</b><span class="status-pill {% if c.needs_manual_review %}status-yellow{% else %}status-green{% endif %}">{% if c.needs_manual_review %}нужна проверка{% else %}ok{% endif %}</span></div>
+            <div class="small-muted">confidence: {{ c.confidence }}</div>
+            <pre class="small mb-0">{{ c.payload_json }}</pre>
+          </div>
+        {% else %}
+          <div class="text-muted">Кандидатов разбора пока нет</div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  <div class="col-lg-7">
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Добавить работу</div>
+      <div class="card-body">
+        <form method="post" action="/reports/{{ report.id }}/work-items" class="row g-3">
+          <div class="col-md-6"><label class="form-label">Объект</label><select name="object_id" class="form-select"><option value="">—</option>{% for row in objects %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
+          <div class="col-md-6"><label class="form-label">Конструктив</label><select name="constructive_id" class="form-select"><option value="">—</option>{% for row in constructives %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
+          <div class="col-md-6"><label class="form-label">Вид работы</label><select name="work_type_id" class="form-select"><option value="">—</option>{% for row in work_types %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
+          <div class="col-md-6"><label class="form-label">Исходное название</label><input name="work_name_raw" class="form-control"></div>
+          <div class="col-md-3"><label class="form-label">Ед. изм.</label><input name="unit" class="form-control" placeholder="м3"></div>
+          <div class="col-md-3"><label class="form-label">Общий объем</label><input name="volume" class="form-control" placeholder="500.00"></div>
+          <div class="col-md-3"><label class="form-label">Силами</label><select name="labor_source_type" class="form-select"><option>own</option><option>hired</option><option>mixed</option><option selected>unknown</option></select></div>
+          <div class="col-md-3"><label class="form-label">Подрядчик</label><input name="contractor_name" class="form-control"></div>
+          <div class="col-12"><label class="form-label">Комментарий</label><textarea name="comment" class="form-control" rows="2"></textarea></div>
+          <div class="col-12 text-end"><button class="btn btn-primary">Добавить работу</button></div>
+        </form>
+      </div>
+    </div>
+    <div class="card mb-4">
+      <div class="card-header fw-semibold">Подтвержденные / введенные работы</div>
+      <div class="card-body">
+        {% for item in work_items %}
+          <div class="border rounded p-3 mb-3">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+              <div>
+                <div class="fw-semibold">{{ item.work_type_name or item.work_name_raw or 'Работа без названия' }}</div>
+                <div class="small-muted">Объект: {{ item.object_name or '—' }} · Конструктив: {{ item.constructive_name or '—' }} · Объем: {{ item.volume or '—' }} {{ item.unit or '' }}</div>
+              </div>
+            </div>
+            <div class="table-responsive mb-3">
+              <table class="table table-sm">
+                <thead><tr><th>PK от</th><th>PK до</th><th>Объем сегмента</th><th>Исходный текст</th></tr></thead>
+                <tbody>
+                {% for seg in item.segments %}
+                  <tr><td>{{ seg.pk_start }}</td><td>{{ seg.pk_end }}</td><td>{{ seg.volume_segment or '—' }}</td><td>{{ seg.pk_raw_text or '—' }}</td></tr>
+                {% else %}
+                  <tr><td colspan="4" class="text-muted">Сегментов пока нет</td></tr>
+                {% endfor %}
+                </tbody>
+              </table>
+            </div>
+            <form method="post" action="/work-items/{{ item.id }}/segments" class="row g-2">
+              <div class="col-md-3"><input name="pk_start" class="form-control" placeholder="328950.00" required></div>
+              <div class="col-md-3"><input name="pk_end" class="form-control" placeholder="330500.00" required></div>
+              <div class="col-md-2"><input name="volume_segment" class="form-control" placeholder="150.00"></div>
+              <div class="col-md-3"><input name="pk_raw_text" class="form-control" placeholder="ПК3289+50 - ПК3305+00"></div>
+              <div class="col-md-1"><button class="btn btn-outline-primary w-100">+</button></div>
+            </form>
+          </div>
+        {% else %}
+          <div class="text-muted">Работ пока нет</div>
+        {% endfor %}
+      </div>
+    </div>
+    <div class="row g-4">
+      <div class="col-xl-6">
+        <div class="card h-100">
+          <div class="card-header fw-semibold">Добавить перевозку</div>
+          <div class="card-body">
+            <form method="post" action="/reports/{{ report.id }}/movements" class="row g-2">
+              <div class="col-12"><label class="form-label">Материал</label><select name="material_id" class="form-select" required>{% for row in materials %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="form-label">Откуда</label><select name="from_object_id" class="form-select"><option value="">—</option>{% for row in objects %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-6"><label class="form-label">Куда</label><select name="to_object_id" class="form-select"><option value="">—</option>{% for row in objects %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}</select></div>
+              <div class="col-md-4"><input name="volume" class="form-control" placeholder="1389.30"></div>
+              <div class="col-md-4"><input name="unit" class="form-control" placeholder="м3"></div>
+              <div class="col-md-4"><input name="trip_count" class="form-control" placeholder="88"></div>
+              <div class="col-md-6"><select name="movement_type" class="form-select"><option>pit_to_constructive</option><option>pit_to_stockpile</option><option>stockpile_to_constructive</option><option>constructive_to_dump</option><option>stockpile_to_dump</option><option selected>other</option></select></div>
+              <div class="col-md-6"><select name="labor_source_type" class="form-select"><option>own</option><option>hired</option><option>mixed</option><option selected>unknown</option></select></div>
+              <div class="col-12"><input name="contractor_name" class="form-control" placeholder="Подрядчик"></div>
+              <div class="col-12"><textarea name="comment" rows="2" class="form-control" placeholder="Комментарий"></textarea></div>
+              <div class="col-12 text-end"><button class="btn btn-primary">Добавить перевозку</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-6">
+        <div class="card h-100">
+          <div class="card-header fw-semibold">Добавить технику</div>
+          <div class="card-body">
+            <form method="post" action="/reports/{{ report.id }}/equipment" class="row g-2">
+              <div class="col-md-6"><input name="equipment_type" class="form-control" placeholder="самосвал" required></div>
+              <div class="col-md-6"><input name="brand_model" class="form-control" placeholder="FAW 806"></div>
+              <div class="col-md-6"><input name="unit_number" class="form-control" placeholder="Бортовой номер"></div>
+              <div class="col-md-6"><input name="plate_number" class="form-control" placeholder="с527хв27"></div>
+              <div class="col-md-6"><input name="operator_name" class="form-control" placeholder="ФИО"></div>
+              <div class="col-md-6"><select name="ownership_type" class="form-select"><option>own</option><option>hired</option><option selected>unknown</option></select></div>
+              <div class="col-md-6"><input name="contractor_name" class="form-control" placeholder="Подрядчик"></div>
+              <div class="col-md-6"><select name="status" class="form-select"><option>working</option><option>repair</option><option>out</option><option>standby</option><option selected>unknown</option></select></div>
+              <div class="col-12"><textarea name="comment" rows="2" class="form-control" placeholder="Комментарий"></textarea></div>
+              <div class="col-12 text-end"><button class="btn btn-primary">Добавить технику</button></div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row g-4 mt-1">
+      <div class="col-xl-6">
+        <div class="card">
+          <div class="card-header fw-semibold">Список перевозок</div>
+          <div class="card-body small">
+            {% for m in movements %}
+              <div class="border-bottom py-2">{{ m.material_name or '—' }}: {{ m.from_object_name or '—' }} → {{ m.to_object_name or '—' }} · {{ m.volume or '—' }} {{ m.unit or '' }} · рейсы {{ m.trip_count or '—' }}</div>
+            {% else %}<div class="text-muted">Перевозок пока нет</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+      <div class="col-xl-6">
+        <div class="card">
+          <div class="card-header fw-semibold">Список техники</div>
+          <div class="card-body small">
+            {% for e in equipment %}
+              <div class="border-bottom py-2">{{ e.equipment_type }} · {{ e.brand_model or '—' }} · {{ e.unit_number or e.plate_number or '—' }} · {{ e.status or 'unknown' }}</div>
+            {% else %}<div class="text-muted">Техники пока нет</div>{% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

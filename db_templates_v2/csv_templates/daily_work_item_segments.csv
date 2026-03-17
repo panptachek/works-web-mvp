@@ -1,0 +1,4 @@
+﻿report_date,source_reference,object_code,work_type_code,pk_start,pk_end,pk_raw_text,comment
+2026-03-14,msg-001,OBJ_MAIN_001,EMBANKMENT_BUILD,287800.0,288500.0,ПК2878+00 - ПК2885+00,Факт сегмент 1
+2026-03-14,msg-002,OBJ_MAIN_001,SOIL_REPLACEMENT,295100.0,295200.0,ПК2951+00 - ПК2952+00,Факт сегмент 2
+2026-03-15,excel-001,OBJ_TEMP_007,ROAD_MAINTENANCE,290000.0,291200.0,ПК2900+00 - ПК2912+00,Обслуживание дороги

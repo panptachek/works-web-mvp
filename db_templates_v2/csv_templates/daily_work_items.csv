@@ -1,0 +1,4 @@
+﻿report_date,shift,section_code,source_reference,object_code,constructive_code,work_type_code,work_name_raw,unit,volume,labor_source_type,contractor_name,comment,approved_by,approved_at
+2026-03-14,day,UCH_1,msg-001,OBJ_MAIN_001,POH,EMBANKMENT_BUILD,Возведение земляного полотна,м3,540.0,own,,Сменный отчет,ПТО,2026-03-14 19:00:00
+2026-03-14,day,UCH_2,msg-002,OBJ_MAIN_001,POH,SOIL_REPLACEMENT,Замена грунта,м3,1550.0,hired,ООО Подряд,Требует проверки,ПТО,2026-03-14 20:00:00
+2026-03-15,night,UCH_1,excel-001,OBJ_TEMP_007,VPD,ROAD_MAINTENANCE,Содержание технологической дороги,км,1.2,mixed,ООО Дорстрой,Ночная смена,ПТО,2026-03-15 08:10:00

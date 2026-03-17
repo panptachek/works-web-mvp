@@ -1,0 +1,57 @@
+{% extends 'base.html' %}
+{% block title %}Новый отчет{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-xl-9">
+    <div class="card">
+      <div class="card-body">
+        <h1 class="h3 mb-3">Новый отчет</h1>
+        <p class="small-muted">MVP-мастер, шаг 1: шапка отчета. После сохранения откроется карточка отчета, где можно добавить работы, сегменты, перевозки и технику.</p>
+        <form method="post" action="/reports/new" class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">Дата отчета</label>
+            <input type="date" name="report_date" class="form-control" required>
+            <div class="form-text">Например: 2026-03-17</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Смена</label>
+            <select name="shift" class="form-select" required>
+              <option value="day">day</option>
+              <option value="night">night</option>
+            </select>
+            <div class="form-text">Выбери день или ночь</div>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label">Строительный участок</label>
+            <select name="section_id" class="form-select" required>
+              {% for row in sections %}<option value="{{ row.id }}">{{ row.name }}</option>{% endfor %}
+            </select>
+            <div class="form-text">Например: Участок 8</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Источник</label>
+            <select name="source_type" class="form-select" required>
+              <option value="manual">manual</option>
+              <option value="max_message">max_message</option>
+            </select>
+            <div class="form-text">Откуда пришел отчет</div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label">Ссылка / ID источника</label>
+            <input name="source_reference" class="form-control">
+            <div class="form-text">ID сообщения MAX или примечание</div>
+          </div>
+          <div class="col-12">
+            <label class="form-label">Исходный текст отчета</label>
+            <textarea name="raw_text" rows="12" class="form-control"></textarea>
+            <div class="form-text">Вставь текст отчета целиком. MVP создаст parse-candidate-заглушку для ручной проверки.</div>
+          </div>
+          <div class="col-12 d-flex justify-content-end">
+            <button class="btn btn-primary">Создать черновик</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

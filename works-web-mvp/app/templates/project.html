@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block title %}Проект{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Проектные объемы</h1>
+{% for row in rows %}
+<div class="card mb-3">
+  <div class="card-body">
+    <div class="fw-semibold">{{ row.object_name or 'Без объекта' }} · {{ row.work_type_name or 'Без вида работ' }}</div>
+    <div class="small-muted">Конструктив: {{ row.constructive_name or '—' }} · Проектный объем: {{ row.project_volume or '—' }} {{ row.unit or '' }}</div>
+    <div class="small-muted">Источник: {{ row.source_reference or '—' }}</div>
+    <div class="mt-2 small">
+      {% for seg in grouped_segments.get(row.id, []) %}
+        <div class="border-bottom py-1">{{ seg.pk_start }} → {{ seg.pk_end }} · {{ seg.project_volume_segment or '—' }}</div>
+      {% else %}
+        <div class="text-muted">Сегментов нет</div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% else %}<div class="text-muted">Нет проектных данных</div>{% endfor %}
+{% endblock %}

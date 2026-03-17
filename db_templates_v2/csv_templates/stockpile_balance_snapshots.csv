@@ -1,0 +1,4 @@
+﻿object_code,snapshot_date,balance_volume,unit,comment
+OBJ_STOCK_01,2026-03-14,1250.0,м3,Остаток на конец дня
+OBJ_STOCK_01,2026-03-15,980.0,м3,После ночной отгрузки
+OBJ_STOCK_01,2026-03-16,1410.0,м3,Пополнение накопителя

@@ -1,0 +1,4 @@
+﻿report_date,shift,section_code,source_reference,material_code,from_object_code,to_object_code,volume,unit,trip_count,movement_type,labor_source_type,contractor_name,comment,approved_by,approved_at
+2026-03-14,day,UCH_1,msg-001,SOIL,OBJ_MAIN_001,OBJ_STOCK_01,320.0,м3,18,constructive_to_dump,own,,Вывоз лишнего грунта,ПТО,2026-03-14 19:10:00
+2026-03-14,day,UCH_2,msg-002,SAND,OBJ_STOCK_01,OBJ_MAIN_001,600.0,м3,24,stockpile_to_constructive,hired,ООО Подряд,Подача песка в насыпь,ПТО,2026-03-14 20:10:00
+2026-03-15,night,UCH_1,excel-001,SHPGS,OBJ_STOCK_01,OBJ_TEMP_007,180.0,м3,9,stockpile_to_constructive,mixed,ООО Дорстрой,Подсыпка дороги,ПТО,2026-03-15 08:15:00

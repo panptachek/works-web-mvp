@@ -1,0 +1,52 @@
+{% extends 'base.html' %}
+{% block title %}Проверка отчета{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <div>
+    <h1 class="h3 mb-1">Проверка отчета</h1>
+    <div class="small-muted">{{ report.report_date }} / {{ report.shift }} / {{ report.section_name or 'Без участка' }}</div>
+  </div>
+  <div class="d-flex gap-2">
+    <a class="btn btn-outline-secondary" href="/reports/{{ report.id }}">Карточка отчета</a>
+    <form method="post" action="/reports/{{ report.id }}/review/approve">
+      <input type="hidden" name="approved_by" value="operator">
+      <button class="btn btn-success">Подтвердить отчет</button>
+    </form>
+  </div>
+</div>
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Слева: исходный текст</div>
+      <div class="card-body"><pre class="raw-text">{{ report.raw_text or 'Исходный текст отсутствует' }}</pre></div>
+    </div>
+  </div>
+  <div class="col-lg-6">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Справа: распознанные сущности / ввод</div>
+      <div class="card-body">
+        <h2 class="h6">Кандидаты разбора</h2>
+        {% for c in candidates %}
+          <div class="border rounded p-2 mb-2">
+            <div class="d-flex justify-content-between"><b>{{ c.candidate_type }}</b><span class="status-pill {% if c.needs_manual_review %}status-yellow{% else %}status-green{% endif %}">{% if c.needs_manual_review %}нужна проверка{% else %}ok{% endif %}</span></div>
+            <pre class="small mb-0">{{ c.payload_json }}</pre>
+          </div>
+        {% else %}<div class="text-muted mb-3">Нет auto-parse кандидатов</div>{% endfor %}
+        <hr>
+        <h2 class="h6">Работы</h2>
+        {% for item in work_items %}
+          <div class="border rounded p-2 mb-2">
+            <div><b>{{ item.work_type_name or item.work_name_raw or 'Работа' }}</b></div>
+            <div class="small-muted">{{ item.object_name or '—' }} · {{ item.volume or '—' }} {{ item.unit or '' }}</div>
+            {% for seg in item.segments %}<div class="small mono">{{ seg.pk_start }} → {{ seg.pk_end }} · {{ seg.volume_segment or '—' }}</div>{% endfor %}
+          </div>
+        {% else %}<div class="text-muted mb-3">Работ нет</div>{% endfor %}
+        <h2 class="h6 mt-4">Перевозки</h2>
+        {% for m in movements %}<div class="border rounded p-2 mb-2">{{ m.material_name or '—' }}: {{ m.from_object_name or '—' }} → {{ m.to_object_name or '—' }} · {{ m.volume or '—' }} {{ m.unit or '' }}</div>{% else %}<div class="text-muted mb-3">Перевозок нет</div>{% endfor %}
+        <h2 class="h6 mt-4">Техника</h2>
+        {% for e in equipment %}<div class="border rounded p-2 mb-2">{{ e.equipment_type }} · {{ e.brand_model or '—' }} · {{ e.unit_number or e.plate_number or '—' }} · {{ e.status or 'unknown' }}</div>{% else %}<div class="text-muted">Техники нет</div>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
