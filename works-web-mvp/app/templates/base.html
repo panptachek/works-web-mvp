@@ -9,20 +9,20 @@
   <link href="/static/app.css" rel="stylesheet">
 </head>
 <body>
-<nav class="navbar navbar-expand-lg bg-white border-bottom mb-4">
+<nav class="navbar navbar-expand-lg nav-shell mb-4">
   <div class="container-fluid px-4">
-    <a class="navbar-brand fw-bold" href="/">Works DB MVP</a>
+    <a class="navbar-brand" href="/">WORKS DB</a>
     <div class="collapse navbar-collapse show">
-      <ul class="navbar-nav me-auto mb-2 mb-lg-0 flex-wrap">
+      <ul class="navbar-nav me-auto mb-2 mb-lg-0 flex-wrap gap-1">
         {% for href, title in nav %}
         <li class="nav-item"><a class="nav-link" href="{{ href }}">{{ title }}</a></li>
         {% endfor %}
       </ul>
-      <div class="d-flex gap-2 small">
-        <span class="badge text-bg-warning">Черновики: {{ header_stats.drafts }}</span>
-        <span class="badge text-bg-primary">Работы сегодня: {{ header_stats.work_items_today }}</span>
-        <span class="badge text-bg-info">Перевозки: {{ header_stats.movements_today }}</span>
-        <span class="badge text-bg-secondary">Техника: {{ header_stats.equipment_today }}</span>
+      <div class="d-flex gap-2 small flex-wrap">
+        <span class="status-pill status-yellow">Черновики {{ header_stats.drafts }}</span>
+        <span class="status-pill status-red">Работы {{ header_stats.work_items_today }}</span>
+        <span class="status-pill status-red">Перевозки {{ header_stats.movements_today }}</span>
+        <span class="status-pill status-red">Техника {{ header_stats.equipment_today }}</span>
       </div>
     </div>
   </div>

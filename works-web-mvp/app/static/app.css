@@ -1,18 +1,39 @@
-body { background: #f3f6fb; color: #0f172a; }
-.card { box-shadow: 0 0.125rem 0.65rem rgba(15,23,42,.06); border: 1px solid #e2e8f0; }
-.card-header { background: #fff; }
+body { background: #eceef1; color: #111827; }
+.nav-shell { background: linear-gradient(180deg, #262626 0%, #1f1f1f 100%); border-bottom: 1px solid #3f3f46; }
+.navbar-brand { color: #fafafa !important; font-weight: 700; letter-spacing: .03em; }
+.nav-link { color: #d4d4d8 !important; border-radius: .5rem; padding: .45rem .7rem !important; }
+.nav-link:hover { background: rgba(255,255,255,.06); color: #fff !important; }
+.page-subtitle, .small-muted { color: #6b7280; font-size: .9rem; }
+.card { background: #fafafa; border: 1px solid #d4d4d8; border-radius: 1rem; box-shadow: 0 10px 25px rgba(17,24,39,.05); }
+.card-header { background: transparent; border-bottom: 1px solid #e4e4e7; font-weight: 700; color: #18181b; padding: 1rem 1.25rem; }
+.card-body { padding: 1.1rem 1.25rem; }
+.metric-card { background: linear-gradient(180deg, #ffffff 0%, #f4f4f5 100%); }
+.metric-value { font-size: 2rem; font-weight: 700; color: #b91c1c; line-height: 1; }
+.metric-label { color: #71717a; text-transform: uppercase; letter-spacing: .06em; font-size: .75rem; }
+.btn-primary { background: #b91c1c; border-color: #b91c1c; }
+.btn-primary:hover, .btn-primary:focus { background: #991b1b; border-color: #991b1b; }
+.btn-success { background: #3f3f46; border-color: #3f3f46; }
+.btn-success:hover, .btn-success:focus { background: #27272a; border-color: #27272a; }
+.btn-outline-primary { color: #b91c1c; border-color: #b91c1c; }
+.btn-outline-primary:hover { background: #b91c1c; border-color: #b91c1c; }
+.btn-outline-secondary, .btn-outline-dark { color: #3f3f46; border-color: #a1a1aa; }
+.table th { color: #52525b; font-size: .8rem; text-transform: uppercase; letter-spacing: .05em; }
 .table td, .table th { vertical-align: middle; }
-.status-pill { padding: .2rem .55rem; border-radius: 999px; font-size: .75rem; font-weight: 600; }
+.form-control, .form-select { border-color: #d4d4d8; border-radius: .75rem; padding: .65rem .8rem; }
+.form-control:focus, .form-select:focus { border-color: #b91c1c; box-shadow: 0 0 0 .2rem rgba(185,28,28,.12); }
+.status-pill { padding: .25rem .6rem; border-radius: 999px; font-size: .74rem; font-weight: 700; }
 .status-green { background: #dcfce7; color: #166534; }
 .status-yellow { background: #fef3c7; color: #92400e; }
 .status-red { background: #fee2e2; color: #991b1b; }
-.small-muted { font-size: .875rem; color: #64748b; }
+.section-title { font-size: .78rem; text-transform: uppercase; letter-spacing: .08em; color: #71717a; margin-bottom: .75rem; }
+pre.raw-text { white-space: pre-wrap; background: #18181b; color: #e4e4e7; padding: 1rem; border-radius: 1rem; min-height: 240px; }
 .mono { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; }
-pre.raw-text { white-space: pre-wrap; background: #0f172a; color: #e2e8f0; padding: 1rem; border-radius: .75rem; min-height: 220px; }
-.navbar-brand { letter-spacing: .01em; }
-.btn-primary { background: #2563eb; border-color: #2563eb; }
-.btn-primary:hover { background: #1d4ed8; border-color: #1d4ed8; }
-.section-title { font-size: .95rem; text-transform: uppercase; letter-spacing: .04em; color: #475569; margin-bottom: .75rem; }
-.sticky-panel { position: sticky; top: 1rem; }
-.form-control, .form-select { border-color: #cbd5e1; }
-.form-control:focus, .form-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 .25rem rgba(59,130,246,.15); }
+.workspace-grid { display: grid; grid-template-columns: minmax(320px, 0.95fr) minmax(560px, 1.45fr); gap: 1.25rem; align-items: start; }
+.workspace-left { position: sticky; top: 1rem; }
+.workspace-stack > * + * { margin-top: 1rem; }
+.panel-soft { background: #f4f4f5; border: 1px solid #e4e4e7; border-radius: .9rem; padding: .9rem; }
+.entity-block { border: 1px solid #e4e4e7; border-radius: .9rem; background: #fff; padding: 1rem; }
+.entity-block + .entity-block { margin-top: 1rem; }
+.entity-title { font-weight: 700; color: #18181b; }
+.entity-meta { color: #71717a; font-size: .9rem; }
+@media (max-width: 1200px) { .workspace-grid { grid-template-columns: 1fr; } .workspace-left { position: static; } }

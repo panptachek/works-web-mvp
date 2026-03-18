@@ -3,55 +3,59 @@
 {% block content %}
 <div class="d-flex justify-content-between align-items-center mb-4">
   <div>
-    <h1 class="h3 mb-1">Главная</h1>
-    <div class="small-muted">Быстрый старт по существующей БД {{ today }}</div>
+    <h1 class="h3 mb-1">Оперативный контур</h1>
+    <div class="page-subtitle">Быстрый доступ к ежедневным отчётам, проверке и сводке на {{ today }}</div>
   </div>
-  <a class="btn btn-primary" href="/reports/new">Новый отчет</a>
+  <a class="btn btn-primary" href="/reports/new">Создать отчет</a>
 </div>
 <div class="row g-3 mb-4">
-  <div class="col-md-3"><div class="card"><div class="card-body"><div class="small-muted">Отчеты за сегодня</div><div class="display-6">{{ today_summary.reports }}</div></div></div></div>
-  <div class="col-md-3"><div class="card"><div class="card-body"><div class="small-muted">Работы за сегодня</div><div class="display-6">{{ today_summary.work_items }}</div></div></div></div>
-  <div class="col-md-3"><div class="card"><div class="card-body"><div class="small-muted">Перевозки за сегодня</div><div class="display-6">{{ today_summary.movements }}</div></div></div></div>
-  <div class="col-md-3"><div class="card"><div class="card-body"><div class="small-muted">Техника за сегодня</div><div class="display-6">{{ today_summary.equipment }}</div></div></div></div>
+  <div class="col-md-3"><div class="card metric-card"><div class="card-body"><div class="metric-label">Отчеты сегодня</div><div class="metric-value">{{ today_summary.reports }}</div></div></div></div>
+  <div class="col-md-3"><div class="card metric-card"><div class="card-body"><div class="metric-label">Работы сегодня</div><div class="metric-value">{{ today_summary.work_items }}</div></div></div></div>
+  <div class="col-md-3"><div class="card metric-card"><div class="card-body"><div class="metric-label">Перевозки сегодня</div><div class="metric-value">{{ today_summary.movements }}</div></div></div></div>
+  <div class="col-md-3"><div class="card metric-card"><div class="card-body"><div class="metric-label">Техника сегодня</div><div class="metric-value">{{ today_summary.equipment }}</div></div></div></div>
 </div>
 <div class="row g-4">
   <div class="col-lg-6">
     <div class="card h-100">
-      <div class="card-header fw-semibold">Черновики на проверку</div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Дата</th><th>Смена</th><th>Участок</th><th>Статус</th><th></th></tr></thead>
-          <tbody>
-          {% for row in drafts %}
-            <tr>
-              <td>{{ row.report_date }}</td><td>{{ row.shift }}</td><td>{{ row.section_name or '—' }}</td><td>{{ row.operator_status or 'draft' }}</td>
-              <td><a class="btn btn-sm btn-outline-primary" href="/reports/{{ row.id }}">Открыть</a></td>
-            </tr>
-          {% else %}
-            <tr><td colspan="5" class="text-center text-muted py-4">Черновиков нет</td></tr>
-          {% endfor %}
-          </tbody>
-        </table>
+      <div class="card-header">Черновики на проверку</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Дата</th><th>Смена</th><th>Участок</th><th>Статус</th><th></th></tr></thead>
+            <tbody>
+            {% for row in drafts %}
+              <tr>
+                <td>{{ row.report_date }}</td><td>{{ row.shift }}</td><td>{{ row.section_name or '—' }}</td><td><span class="status-pill status-yellow">{{ row.operator_status or 'pending' }}</span></td>
+                <td><a class="btn btn-sm btn-outline-primary" href="/reports/{{ row.id }}">Открыть</a></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="5" class="text-center text-muted py-4">Черновиков нет</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
   <div class="col-lg-6">
     <div class="card h-100">
-      <div class="card-header fw-semibold">Последние подтвержденные отчеты</div>
-      <div class="table-responsive">
-        <table class="table table-sm mb-0">
-          <thead><tr><th>Дата</th><th>Смена</th><th>Участок</th><th></th></tr></thead>
-          <tbody>
-          {% for row in confirmed %}
-            <tr>
-              <td>{{ row.report_date }}</td><td>{{ row.shift }}</td><td>{{ row.section_name or '—' }}</td>
-              <td><a class="btn btn-sm btn-outline-secondary" href="/reports/{{ row.id }}/review">Просмотр</a></td>
-            </tr>
-          {% else %}
-            <tr><td colspan="4" class="text-center text-muted py-4">Подтвержденных отчетов пока нет</td></tr>
-          {% endfor %}
-          </tbody>
-        </table>
+      <div class="card-header">Подтвержденные отчеты</div>
+      <div class="card-body p-0">
+        <div class="table-responsive">
+          <table class="table table-sm mb-0">
+            <thead><tr><th>Дата</th><th>Смена</th><th>Участок</th><th></th></tr></thead>
+            <tbody>
+            {% for row in confirmed %}
+              <tr>
+                <td>{{ row.report_date }}</td><td>{{ row.shift }}</td><td>{{ row.section_name or '—' }}</td>
+                <td><a class="btn btn-sm btn-outline-secondary" href="/reports/{{ row.id }}/review">Открыть</a></td>
+              </tr>
+            {% else %}
+              <tr><td colspan="4" class="text-center text-muted py-4">Подтвержденных отчетов пока нет</td></tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   </div>
